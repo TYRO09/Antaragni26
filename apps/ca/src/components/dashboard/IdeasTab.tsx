@@ -26,7 +26,10 @@ export function IdeasTab() {
   const validate = () => {
     const e: typeof errors = {};
     if (title.trim().length < 5) e.title = "Please enter a more descriptive title.";
+    // [SECURITY] Enforce maximum lengths to prevent storage abuse
+    if (title.trim().length > 100) e.title = "Title must be under 100 characters.";
     if (description.trim().length < 20) e.description = "Please elaborate — at least 20 characters.";
+    if (description.trim().length > 2000) e.description = "Description must be under 2000 characters.";
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -56,7 +59,9 @@ export function IdeasTab() {
       toast.success("Idea Submitted!");
       setSubmitted(true);
     } catch (error) {
-      toast.error(`${error}`);
+      // [SECURITY] Do not expose raw error to user
+      console.error("Idea submission error:", error);
+      toast.error("Submission failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

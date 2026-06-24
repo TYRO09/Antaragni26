@@ -68,12 +68,27 @@ export default function Login() {
 		}
 	};
 
+	// [SECURITY] Validate a URL field is either empty or a valid https:// URL
+	const isValidUrl = (url: string) => url === "" || /^https:\/\/.+/.test(url);
+
 	const register = async () => {
 		try {
-			if (mobile.length !== 10 || whatsapp.length !== 10) {
-				toast.error("Please enter 10 digit Mobile/Whatsapp Number");
+			// [SECURITY] Phone number digit-only and length check
+			if (!/^\d{10}$/.test(mobile) || !/^\d{10}$/.test(whatsapp)) {
+				toast.error("Please enter a valid 10-digit Mobile/Whatsapp Number");
 				return;
 			}
+
+			// [SECURITY] Max-length guards on free-text fields to prevent storage abuse
+			if (name.trim().length > 100) { toast.error("Name must be under 100 characters."); return; }
+			if (college.trim().length > 150) { toast.error("College name must be under 150 characters."); return; }
+			if (collegeCity.trim().length > 100) { toast.error("College city must be under 100 characters."); return; }
+			if (address.trim().length > 300) { toast.error("Address must be under 300 characters."); return; }
+
+			// [SECURITY] Social media fields must be valid https:// URLs if provided
+			if (!isValidUrl(facebook)) { toast.error("Facebook link must be a valid https:// URL."); return; }
+			if (!isValidUrl(insta)) { toast.error("Instagram link must be a valid https:// URL."); return; }
+			if (!isValidUrl(twitter)) { toast.error("X/Twitter link must be a valid https:// URL."); return; }
 
 			if (
 				mobile != "" &&
@@ -87,18 +102,18 @@ export default function Login() {
 			) {
 				const UserData = {
 					id: `CA.ANT.${uid.rnd()}`,
-					name: name,
+					name: name.trim().slice(0, 100),
 					email: email,
 					phone: mobile,
 					whatsapp: whatsapp,
 					gender: gender,
-					address: address,
-					college: college.toUpperCase(),
-					collegeCity: collegeCity,
+					address: address.trim().slice(0, 300),
+					college: college.trim().toUpperCase().slice(0, 150),
+					collegeCity: collegeCity.trim().slice(0, 100),
 					year: yearOfStudy,
-					fb: facebook,
-					insta: insta,
-					twitter: twitter,
+					fb: facebook.trim().slice(0, 200),
+					insta: insta.trim().slice(0, 200),
+					twitter: twitter.trim().slice(0, 200),
 					points: 0,
 				};
 				const isSuccess = await setData("CAs26", user!.user.uid, UserData);
@@ -116,7 +131,9 @@ export default function Login() {
 				toast.error("Please fill all the required fields");
 			}
 		} catch (error) {
-			toast.error(`${error}`);
+			// [SECURITY] Do not expose raw Firebase error to user
+			console.error("Registration error:", error);
+			toast.error("Registration failed. Please try again.");
 		}
 	};
 

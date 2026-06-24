@@ -1,6 +1,19 @@
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
+import { z } from "zod";
+
+// 1. Define schema for the editor layout configuration
+const elementTransformSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  scale: z.number(),
+  rotation: z.number(),
+  opacity: z.number().min(0).max(1),
+  zIndex: z.number()
+});
+
+const layoutSchema = z.record(z.string(), elementTransformSchema);
 
 export async function POST(req: Request) {
   // Security check: Only allow in development mode or if explicitly enabled
@@ -9,7 +22,10 @@ export async function POST(req: Request) {
   }
 
   try {
-    const layout = await req.json();
+    const rawBody = await req.json();
+    
+    // 2. Validate incoming data against the Zod schema
+    const layout = layoutSchema.parse(rawBody);
 
     const fileContent = `export interface ElementTransform {
   x: number;
@@ -41,6 +57,15 @@ export const incentivesLayout: IncentivesLayoutConfig = ${JSON.stringify(layout,
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to save layout:", error);
+    
+    // 3. Handle validation errors specifically
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Invalid input data", details: error.errors }, 
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json({ error: "Failed to save layout" }, { status: 500 });
   }
 }

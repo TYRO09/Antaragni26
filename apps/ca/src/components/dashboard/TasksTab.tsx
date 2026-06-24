@@ -75,6 +75,16 @@ export function TasksTab() {
   const submit = async (task: Task) => {
     try {
       if (link !== "") {
+        // [SECURITY] Validate the link is a proper https:// URL to prevent XSS via javascript: URIs
+        if (!/^https:\/\/.+/.test(link.trim())) {
+          toast.error("Please provide a valid https:// link as proof.");
+          return;
+        }
+        // [SECURITY] Enforce max length to prevent storage abuse
+        if (link.trim().length > 500) {
+          toast.error("Link is too long. Please use a shortened URL.");
+          return;
+        }
         const data = {
           taskId: task.uid,
           taskDesc: task.desc,
@@ -84,7 +94,7 @@ export function TasksTab() {
           name: user?.details.name,
           email: user?.details.email,
           phone: user?.details.phone,
-          link: link,
+          link: link.trim(),
           college: user?.details.college,
           collegeCity: user?.details.collegeCity,
         };
@@ -98,7 +108,9 @@ export function TasksTab() {
         toast.error("Provide Link");
       }
     } catch (error) {
-      toast.error(`${error}`);
+      // [SECURITY] Do not expose raw error to user
+      console.error("Task submission error:", error);
+      toast.error("Submission failed. Please try again.");
       setIsOpen(false);
     }
   };

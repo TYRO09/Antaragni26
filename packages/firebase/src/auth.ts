@@ -60,7 +60,9 @@ export const firebaseLogout = async (setUser: (user: { user: User; details: any 
     toast.success("Logged out successfully")
     setUser(null)
   } catch (error) {
-    toast.error(`Error in logging out: ${error}`);
+    // [SECURITY] Do not expose raw Firebase error to user
+    console.error("Logout error:", error);
+    toast.error("Failed to log out. Please try again.");
   }
 };
 
@@ -113,7 +115,9 @@ export const firebaseGoogleSignIn = async (): Promise<User | null> => {
     toast.success("Logged in successfully!")
     return response.user;
   } catch (error) {
-    toast.error(`Error in Google sign-in: ${error}`);
+    // [SECURITY] Do not expose raw Firebase error to user
+    console.error("Google sign-in error:", error);
+    toast.error("Google sign-in failed. Please try again.");
     return null;
   }
 };
